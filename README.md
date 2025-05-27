@@ -46,6 +46,7 @@ Kuma Mieru 是一款基于 Next.js 15、TypeScript 和 Recharts 构建的第三�
     - [2. 修改环境变量](#2-修改环境变量)
     - [3. 启动容器服务](#3-启动容器服务)
 - [环境变量配置](#环境变量配置)
+  - [多页面支持配置说明](#多页面支持配置说明)
 - [与 Uptime Kuma 集成 :link:](#与-uptime-kuma-集成-link)
 - [FAQ :question:](#faq-question)
   - [为什么我在 Kuma Mieru 中看到的时间与 Uptime Kuma 中有偏移？](#为什么我在-kuma-mieru-中看到的时间与-uptime-kuma-中有偏移)
@@ -241,15 +242,28 @@ docker run -d \
 
 那么您需要配置的环境变量如下：
 
-| 变量名                   | 必填 | 说明                           | 示例/默认值                                        |
-| ------------------------ | ---- | ------------------------------ | -------------------------------------------------- |
-| UPTIME_KUMA_BASE_URL     | Yes  | Uptime Kuma 实例的基础 URL     | https://example.kuma-mieru.invalid                 |
-| PAGE_ID                  | Yes  | Uptime Kuma 实例的状态页面 ID  | test1                                              |
-| FEATURE_EDIT_THIS_PAGE   | No   | 是否展示 "Edit This Page" 按钮 | false                                              |
-| FEATURE_SHOW_STAR_BUTTON | No   | 是否展示 "Star on Github" 按钮 | true                                               |
-| FEATURE_TITLE            | No   | 自定义页面标题                 | Kuma Mieru                                         |
-| FEATURE_DESCRIPTION      | No   | 自定义页面描述                 | A beautiful and modern uptime monitoring dashboard |
-| FEATURE_ICON             | No   | 自定义页面图标URL              | /icon.svg                                          |
+| 变量名                   | 必填 | 说明                               | 示例/默认值                        |
+| ------------------------ | ---- | ---------------------------------- | ---------------------------------- |
+| UPTIME_KUMA_BASE_URL     | Yes  | Uptime Kuma 实例的基础 URL         | https://example.kuma-mieru.invalid |
+| PAGE_ID                  | Yes  | Uptime Kuma 实例的状态页面 ID      | test1                              |
+| PAGE_IDS                 | No   | 支持多个状态页面，使用逗号分隔各ID | test1,test2,test3                  |
+| FEATURE_EDIT_THIS_PAGE   | No   | 是否展示 "Edit This Page" 按钮     | false                              |
+| FEATURE_SHOW_STAR_BUTTON | No   | 是否展示 "Star on Github" 按钮     | true                               |
+| FEATURE_TITLE            | No   | 自定义页面标题                     | Kuma Mieru                         |
+
+### 多页面支持配置说明
+
+从 v1.4.0 版本开始，Kuma Mieru 支持配置多个状态页面。您可以通过以下方式配置：
+
+1. 设置 `PAGE_IDS` 环境变量，使用逗号分隔不同的页面 ID，例如：`test1,test2,test3`
+2. 默认使用 `PAGE_IDS` 中的第一个页面作为默认页面。
+
+配置后，您可以通过以下 URL 访问不同的状态页面：
+
+- 默认页面：`https://your-kuma-mieru.com/`
+- 指定页面：`https://your-kuma-mieru.com/test2`（访问 ID 为 test2 的页面）
+
+每个页面都可以拥有独立的配置，包括不同的标题、描述和图标，这些信息会从 Uptime Kuma 对应的状态页面中获取。
 
 ## 与 Uptime Kuma 集成 :link:
 

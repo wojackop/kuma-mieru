@@ -13,10 +13,16 @@ const siteMetaSchema = z.object({
   icon: z.string().default('/icon.svg'),
 });
 
+const pageConfigSchema = z.object({
+  id: z.string(),
+  name: z.string().optional(),
+  siteMeta: siteMetaSchema,
+});
+
 const configSchema = z.object({
   baseUrl: z.string().url(),
-  pageId: z.string(),
-  siteMeta: siteMetaSchema,
+  defaultPageId: z.string(),
+  pages: z.array(pageConfigSchema),
   isPlaceholder: z.boolean().default(false),
   isEditThisPage: z.boolean().default(false),
   isShowStarButton: z.boolean().default(true),
@@ -119,7 +125,31 @@ async function generateConfig() {
     }
 
     const baseUrl = getRequiredEnvVar('UPTIME_KUMA_BASE_URL');
-    const pageId = getRequiredEnvVar('PAGE_ID');
+
+    // 处理多页面ID配置
+    // 格式：PAGE_IDS=default:Default Page,page1:Page One,page2:Page Two
+    // 或者简单格式：PAGE_IDS=default,page1,page2
+    const pageIdsStr = process.env.PAGE_IDS || process.env.PAGE_ID;
+
+    if (!pageIdsStr) {
+      throw new Error('Either PAGE_IDS or PAGE_ID environment variable is required');
+    }
+
+    // 解析页面配置
+    const pageConfigs: { id: string; name?: string }[] = [];
+    const pageIdEntries = pageIdsStr.split(',').map((entry) => entry.trim());
+
+    // 确定默认页面ID（第一个页面或者通过PAGE_DEFAULT_ID指定）
+    const defaultPageId = process.env.PAGE_DEFAULT_ID || pageIdEntries[0].split(':')[0];
+
+    for (const entry of pageIdEntries) {
+      if (entry.includes(':')) {
+        const [id, name] = entry.split(':');
+        pageConfigs.push({ id: id.trim(), name: name.trim() });
+      } else {
+        pageConfigs.push({ id: entry.trim() });
+      }
+    }
 
     // 获取并验证配置项
     try {
@@ -134,12 +164,21 @@ async function generateConfig() {
     console.log(`[env] - isEditThisPage: ${isEditThisPage}`);
     console.log(`[env] - isShowStarButton: ${isShowStarButton}`);
 
-    const siteMeta = await fetchSiteMeta(baseUrl, pageId);
+    // 为每个页面获取站点元数据
+    const pagesWithMeta = await Promise.all(
+      pageConfigs.map(async (page) => {
+        const siteMeta = await fetchSiteMeta(baseUrl, page.id);
+        return {
+          ...page,
+          siteMeta,
+        };
+      }),
+    );
 
     const config = configSchema.parse({
       baseUrl,
-      pageId,
-      siteMeta,
+      defaultPageId,
+      pages: pagesWithMeta,
       isPlaceholder: false,
       isEditThisPage,
       isShowStarButton,

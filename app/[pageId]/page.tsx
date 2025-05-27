@@ -13,12 +13,12 @@ import {
   useMaintenanceData,
   useMonitorData,
 } from '@/components/utils/swr';
-import { apiConfig } from '@/config/api';
+import { getConfigForPage } from '@/config/api';
 import { filterMonitorByStatus } from '@/utils/monitorFilters';
 import { Button, Tooltip } from '@heroui/react';
 import { LayoutGrid, LayoutList } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 
 import type { Monitor, MonitorGroup } from '@/types/monitor';
@@ -30,18 +30,23 @@ interface EnhancedMonitorGroup extends MonitorGroup {
   monitorList: Monitor[];
 }
 
-export default function Home() {
+export default function StatusPage() {
+  const params = useParams();
+  const pageId = params.pageId as string;
+
+  // 设置当前页面配置
+  const pageConfig = getConfigForPage(pageId);
+
   const {
     monitorGroups,
     monitoringData,
     isLoading: isLoadingMonitors,
     revalidate: revalidateMonitors,
-  } = useMonitorData();
-  const { config: globalConfig, isLoading: isLoadingConfig } = useConfig();
-  const { maintenanceList, isLoading: isLoadingMaintenance } = useMaintenanceData();
+  } = useMonitorData(pageId);
+  const { config: globalConfig, isLoading: isLoadingConfig } = useConfig(pageId);
+  const { maintenanceList, isLoading: isLoadingMaintenance } = useMaintenanceData(pageId);
   const [isGlobalLiteView, setIsGlobalLiteView] = useState(false);
   const { searchTerm, isFiltering, clearSearch, filterStatus, searchInGroup } = useNodeSearch();
-  const router = useRouter();
 
   const t = useTranslations();
   const viewT = useTranslations('view');
@@ -54,11 +59,6 @@ export default function Home() {
       }
     }
   }, []);
-
-  useEffect(() => {
-    // 获取默认页面ID，重定向到对应页面
-    router.push(`/${apiConfig.defaultPageId}`);
-  }, [router]);
 
   const isLoading = isLoadingMonitors || isLoadingConfig || isLoadingMaintenance;
 
@@ -74,7 +74,7 @@ export default function Home() {
   }, [isGlobalLiteView]);
 
   const handleRefresh = async () => {
-    await revalidateData();
+    await revalidateData(pageId);
   };
 
   const toggleGlobalView = () => {
@@ -147,5 +147,53 @@ export default function Home() {
     }, 0);
   }, [filteredMonitorGroups, isFiltering]);
 
-  return null; // 这个组件会重定向，不需要渲染内容
+  return (
+    <>
+      <AutoRefresh onRefresh={handleRefresh} interval={60000}>
+        <div className="mx-auto max-w-screen-2xl px-4 py-8 pt-4">
+          {/* 状态总览 */}
+          <div className="flex justify-between items-center mb-6" suppressHydrationWarning={true}>
+            <SystemStatusAlert />
+            <Tooltip
+              content={isGlobalLiteView ? viewT('switchToFull') : viewT('switchToLite')}
+              suppressHydrationWarning={true}
+            >
+              <Button
+                isIconOnly
+                variant="light"
+                onPress={toggleGlobalView}
+                className="ml-2"
+                aria-label={isGlobalLiteView ? viewT('switchToFull') : viewT('switchToLite')}
+                suppressHydrationWarning={true}
+              >
+                {isGlobalLiteView ? <LayoutGrid size={20} /> : <LayoutList size={20} />}
+              </Button>
+            </Tooltip>
+          </div>
+
+          {/* 维护计划显示 */}
+          {activeMaintenances.map((maintenance) => (
+            <MaintenanceAlert key={maintenance.id} maintenance={maintenance} />
+          ))}
+
+          {/* 公告显示 */}
+          {globalConfig?.incident && <IncidentMarkdownAlert incident={globalConfig.incident} />}
+
+          {/* 搜索筛选提示 */}
+          <FilterResults matchedMonitorsCount={matchedMonitorsCount} />
+
+          {/* 监控组和监控项 */}
+          <MonitorGroupList
+            isLoading={isLoading}
+            monitorGroups={filteredMonitorGroups}
+            monitoringData={monitoringData}
+            isFiltering={isFiltering}
+            isGlobalLiteView={isGlobalLiteView}
+            clearSearch={clearSearch}
+            pageId={pageId}
+          />
+        </div>
+      </AutoRefresh>
+    </>
+  );
 }
