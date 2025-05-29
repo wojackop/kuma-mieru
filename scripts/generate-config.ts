@@ -58,7 +58,7 @@ async function fetchSiteMeta(baseUrl: string, pageId: string) {
   const customDescription = getOptionalEnvVar('FEATURE_DESCRIPTION');
   const customIcon = getOptionalEnvVar('FEATURE_ICON');
 
-  console.log('[env] [feature_fields]');
+  console.log(`[env] [fetching meta for page: ${pageId}]`);
   console.log(`[env] - FEATURE_TITLE: ${customTitle || 'Not set'}`);
   console.log(`[env] - FEATURE_DESCRIPTION: ${customDescription || 'Not set'}`);
   console.log(`[env] - FEATURE_ICON: ${customIcon || 'Not set'}`);
@@ -76,6 +76,7 @@ async function fetchSiteMeta(baseUrl: string, pageId: string) {
   }
 
   try {
+    console.log(`[env] [fetching from: ${baseUrl}/status/${pageId}]`);
     const response = await fetch(`${baseUrl}/status/${pageId}`);
     if (!response.ok) {
       throw new Error(`Failed to fetch site meta: ${response.status} ${response.statusText}`);
@@ -83,23 +84,41 @@ async function fetchSiteMeta(baseUrl: string, pageId: string) {
 
     const html = await response.text();
     const $ = cheerio.load(html);
-    const preloadScript = $('#preload-data').text();
 
+    // 首先尝试从预加载数据获取
+    const preloadScript = $('#preload-data').text();
     if (!preloadScript) {
-      throw new Error('Preload data script tag not found');
+      // 如果找不到预加载数据，尝试从HTML中获取
+      const pageTitle = $('title').text() || undefined;
+      const metaDescription = $('meta[name="description"]').attr('content') || undefined;
+      const favicon = $('link[rel="icon"]').attr('href') || undefined;
+
+      console.log(
+        `[env] [found in HTML] title: ${pageTitle}, desc: ${metaDescription}, icon: ${favicon}`,
+      );
+
+      return siteMetaSchema.parse({
+        title: customTitle || pageTitle,
+        description: customDescription || metaDescription,
+        icon: customIcon || favicon,
+      });
     }
 
     const jsonStr = sanitizeJsonString(preloadScript);
     const preloadData = extractPreloadData(jsonStr);
 
+    console.log(
+      `[env] [found in preload] title: ${preloadData.config?.title}, desc: ${preloadData.config?.description}, icon: ${preloadData.config?.icon}`,
+    );
+
     // 合并自定义值，自定义优先级 > API
     return siteMetaSchema.parse({
-      title: customTitle || preloadData.config.title || undefined, // 触发 zod 默认值
-      description: customDescription || preloadData.config.description || undefined,
-      icon: customIcon || preloadData.config.icon || undefined,
+      title: customTitle || preloadData.config?.title || undefined,
+      description: customDescription || preloadData.config?.description || undefined,
+      icon: customIcon || preloadData.config?.icon || undefined,
     });
   } catch (error) {
-    console.error('Error fetching site meta:', error);
+    console.error(`Error fetching site meta for page ${pageId}:`, error);
 
     if (hasAnyCustomValue) {
       return siteMetaSchema.parse({
@@ -167,7 +186,11 @@ async function generateConfig() {
     // 为每个页面获取站点元数据
     const pagesWithMeta = await Promise.all(
       pageConfigs.map(async (page) => {
+        console.log(`[env] [processing page: ${page.id}]`);
         const siteMeta = await fetchSiteMeta(baseUrl, page.id);
+        console.log(
+          `[env] [meta for ${page.id}] title: ${siteMeta.title}, desc: ${siteMeta.description}, icon: ${siteMeta.icon}`,
+        );
         return {
           ...page,
           siteMeta,
@@ -195,6 +218,7 @@ async function generateConfig() {
 
     console.log('✅ Configuration file generated successfully!');
     console.log(`[env] [generated-config.json] ${configPath}`);
+    console.log(`[env] [config] ${JSON.stringify(config, null, 2)}`);
   } catch (error) {
     if (error instanceof Error) {
       console.error('❌ Error generating configuration file:', error.message);

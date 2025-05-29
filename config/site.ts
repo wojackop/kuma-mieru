@@ -1,5 +1,6 @@
 'use client';
 
+import { resolveIconUrl } from '@/utils/url';
 import { getConfigForPage } from './api';
 import { env } from './env';
 
@@ -28,14 +29,6 @@ const navItems: NavItem[] = [
   },
 ];
 
-const resolveIconUrl = (iconPath?: string): string => {
-  if (!iconPath) return baseConfig.icon;
-
-  return iconPath.startsWith('http')
-    ? iconPath
-    : `${env.config.baseUrl}/${iconPath.replace(/^\//, '')}`;
-};
-
 const getVisibleNavItems = (items: NavItem[]): NavItem[] => {
   return items.filter((item) => (item.label !== 'page.edit' ? true : env.config.isEditThisPage));
 };
@@ -52,7 +45,7 @@ const siteMeta = defaultPage?.siteMeta || {
 export const siteConfig = {
   name: siteMeta.title || baseConfig.name,
   description: siteMeta.description || baseConfig.description,
-  icon: resolveIconUrl(siteMeta.icon),
+  icon: resolveIconUrl(siteMeta.icon, env.config.baseUrl),
   navItems: getVisibleNavItems(navItems),
   navMenuItems: getVisibleNavItems(navItems),
   links: {
