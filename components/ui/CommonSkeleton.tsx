@@ -65,7 +65,7 @@ export const MonitorCardSkeleton = () => {
           <div className="flex gap-1">
             <HeroUISkeleton className="h-8 w-full rounded-sm" />
           </div>
-          <HeroUISkeleton className="h-[1px] w-full" />
+          <HeroUISkeleton className="h-px w-full" />
           {/* Charts */}
           <HeroUISkeleton className="h-[120px] w-full rounded-lg" />
         </div>

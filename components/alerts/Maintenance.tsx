@@ -79,7 +79,7 @@ function MaintenanceAlert({ maintenance }: { maintenance: Maintenance }) {
       );
 
       return (
-        <Card className="mt-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border border-amber-200 dark:border-amber-800">
+        <Card className="mt-4 bg-linear-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border border-amber-200 dark:border-amber-800">
           <CardBody className="p-4">
             <div className="flex items-center gap-2 mb-3">
               <Timer className="h-5 w-5 text-amber-600 dark:text-amber-400" />
@@ -148,7 +148,7 @@ function MaintenanceAlert({ maintenance }: { maintenance: Maintenance }) {
 
     if (isScheduled) {
       return (
-        <Card className="mt-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-200 dark:border-blue-800">
+        <Card className="mt-4 bg-linear-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-200 dark:border-blue-800">
           <CardBody className="p-4">
             <div className="flex items-center gap-2 mb-3">
               <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400" />
