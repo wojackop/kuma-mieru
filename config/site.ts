@@ -46,7 +46,7 @@ export const siteConfig = {
   navItems: getVisibleNavItems(navItems),
   navMenuItems: getVisibleNavItems(navItems),
   links: {
-    github: 'https://github.com/Alice39s/kuma-mieru',
+    github: 'https://github.com/wojackop/kuma-mieru',
     docs: 'https://github.com/Alice39s/kuma-mieru/blob/main/README.md',
   },
 } as const;
